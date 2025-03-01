@@ -1,10 +1,18 @@
 const socket = io();
 
+const username = prompt("Enter your Username");
+
+// User Location History
+const userPath = [];
 // Check if browser supports geolocation
 if (navigator.geolocation) {
     navigator.geolocation.watchPosition((position) => {
         const { latitude, longitude } = position.coords;
-        socket.emit('sendLocation', { latitude, longitude });
+        socket.emit('sendLocation', {username, latitude, longitude });
+        userPath.push([latitude, longitude]); 
+        if (userPath.length > 1) {
+            const polyline = L.polyline(userPath, { color: 'red' }).addTo(map); // Route
+        }
     }, (error) => {
         console.log(error);
     }, {
@@ -29,11 +37,28 @@ socket.on("userDisconnected", (id) => {
     }
 });
 socket.on("receiveLocation", (data) => {
-    const { id, latitude, longitude } = data;
+    const { id, username, latitude, longitude } = data;
     map.setView([latitude, longitude]);
     if (!markers[id]) {
-        markers[id] = L.marker([latitude, longitude]).addTo(map);
+        markers[id] = L.marker([latitude, longitude])
+        .bindPopup(username)
+        .addTo(map)
+        .openPopup();
     } else {
-        markers[id].setLatLng([latitude, longitude]);
+        markers[id].setLatLng([latitude, longitude]).bindPopup(username).openPopup();
     }
 });
+
+// Mock coordinates
+const polygonCoords = [
+    [19.0208754, 72.856137], 
+    [19.0208754, 72.853137],
+    [19.0188754, 72.853137],
+    [19.0188754, 72.856137]
+];
+   
+
+// Draw the polygon on the map
+L.polygon(polygonCoords, { color: 'red' }).addTo(map)
+    .bindPopup("Test Polygon Area")
+    .openPopup();
